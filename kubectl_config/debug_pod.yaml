@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-pod
+  labels:
+    app: debug
+spec:
+  containers:
+  - name: debug-container
+    image: gitlab-registry.nrp-nautilus.io/nrp/scientific-images/python:cuda-v1.5.0
+    command: ['sh', '-c', 'echo Container is running... && sleep 3600']
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: "4"
+        memory: "16Gi"
+      limits:
+        cpu: "8"
+        memory: "32Gi"
+        nvidia.com/a40: 1  # Request 1 GPU
+  restartPolicy: Never
