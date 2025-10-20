@@ -37,7 +37,7 @@ spec:
 
           
           # Run the example
-          python run.py --config configs/example_no_wandb.json -y
+          python run.py --config configs/example_no_wandb.json
 
 
           
@@ -46,11 +46,11 @@ spec:
           mountPath: /data
         resources:
           requests:
-            cpu: "4"
-            memory: "16Gi"
-          limits:
-            cpu: "8"
+            cpu: "16"
             memory: "32Gi"
+          limits:
+            cpu: "32"
+            memory: "64Gi"
             nvidia.com/gpu: 1  # Request 1 GPU
       volumes:
       - name: data
