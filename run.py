@@ -89,7 +89,7 @@ if __name__ == '__main__':
         wandb_logger = WandbLogger(
             project=config.wandb_project,
             name=config.wandb_run_name,
-            entity='lklab_kaist')
+            entity='lisihang1401443109')
     else:
         wandb_logger = None
 
