@@ -44,16 +44,12 @@ class Custom_Dataset(Dataset):
                         self.dataset_name,
                         valid_subset_path,
                         split=type_path,
-                        ignore_verifications=True,
-                        cache_dir=args.cache_dir,
-                        trust_remote_code=getattr(args, 'trust_remote_code', True))
+                        ignore_verifications=True)
                 else:
                     dataset = load_dataset(
                         self.dataset_name,
                         split=type_path,
-                        ignore_verifications=True,
-                        cache_dir=args.cache_dir,
-                        trust_remote_code=getattr(args, 'trust_remote_code', True))
+                        ignore_verifications=True)
                 self.dataset = dataset.to_pandas()
 
         # About 4 examples have one more or one less class for some reason,

@@ -71,10 +71,6 @@ if __name__ == '__main__':
         config.min_train_epochs = 0
     if 'do_init_eval' not in config:
         config.do_init_eval = True if config.mode == 'unlearn' else False
-    if 'cache_dir' not in config:
-        config.cache_dir = "./cache"
-    if 'trust_remote_code' not in config:
-        config.trust_remote_code = True
 
     pl.seed_everything(seed, workers=True)
 
