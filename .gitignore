@@ -16,4 +16,4 @@ logs
 test.py
 nohup.out
 .fuse*
-kubectl_config/*
+kubectl_config
