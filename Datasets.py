@@ -44,13 +44,13 @@ class Custom_Dataset(Dataset):
                         self.dataset_name,
                         valid_subset_path,
                         split=type_path,
-                        ignore_verifications=True,
+                        # ignore_verifications=True,
                         trust_remote_code=True)
                 else:
                     dataset = load_dataset(
                         self.dataset_name,
                         split=type_path,
-                        ignore_verifications=True,
+                        # ignore_verifications=True,
                         trust_remote_code=True)
                 self.dataset = dataset.to_pandas()
 
