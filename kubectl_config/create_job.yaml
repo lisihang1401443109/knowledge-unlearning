@@ -36,7 +36,7 @@ spec:
           
           # Export Wandb API
           export WANDB_API_KEY=4a6824818e9a3e7aee2d897e0c6a18d4a0e0a52a
-          export PL_DEEPSPEED_CONFIG_PATH=~/knowledge-unlearning/ds_config.json
+          # export PL_DEEPSPEED_CONFIG_PATH=~/knowledge-unlearning/ds_config.json
 
           # Run the example
           python run.py --config configs/example_no_wandb.json
