@@ -55,7 +55,7 @@
     "output_length": 512,
     "target_length": 200,
     "num_workers": 16,
-    "strategy": "deepspeed_stage_2_offload",
+    "strategy": "deepspeed_stage_2",
     "fp16": true,
     "wandb_log": true
 }
