@@ -11,3 +11,4 @@ boto3
 rouge
 lm-eval
 torchmetrics==0.10.3
+deepspeed
