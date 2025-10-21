@@ -1,4 +1,4 @@
-transformers==4.24.0
+transformers
 pytorch-lightning==1.9.5
 pandas
 numpy
