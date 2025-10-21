@@ -6,7 +6,6 @@ nlp==0.4.0
 sentencepiece==0.1.94
 wandb
 nltk
-deepspeed==0.7.0
 boto3
 rouge
 lm-eval

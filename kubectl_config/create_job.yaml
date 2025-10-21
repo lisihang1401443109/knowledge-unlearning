@@ -28,12 +28,13 @@ spec:
           export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
           pip install torch torchvision torchaudio
 
-          pip freeze
+          # pip freeze
           
-          # Install other requirements
-          pip install -r requirements.txt
-          # pip install torch-lightning==1.9.5
-          pip install --force-reinstall timm
+          # # Install other requirements
+          # pip install -r requirements.txt
+          # # pip install torch-lightning==1.9.5
+          # pip install --force-reinstall timm
+          pip install -r new_requirements.txt
           
           # Export Wandb API
           export WANDB_API_KEY=4a6824818e9a3e7aee2d897e0c6a18d4a0e0a52a
