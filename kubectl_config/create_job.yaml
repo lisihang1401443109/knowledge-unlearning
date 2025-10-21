@@ -15,6 +15,7 @@ spec:
           git clone https://github.com/lisihang1401443109/knowledge-unlearning
           cd knowledge-unlearning
           git checkout dev
+          git pull 
           
           # Create and activate conda environment
           conda create -n ufl python=3.8 -y
@@ -25,16 +26,16 @@ spec:
           conda install -c nvidia cuda-toolkit=11.3 -y
           export CUDA_HOME=$CONDA_PREFIX
           export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
-          # conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
           pip install torch torchvision torchaudio
+
+          pip freeze
           
           # Install other requirements
           pip install -r requirements.txt
-          # pip install torch-lightning==1.9.5 --force-reinstall
+          # pip install torch-lightning==1.9.5
           
           # Export Wandb API
           export WANDB_API_KEY=4a6824818e9a3e7aee2d897e0c6a18d4a0e0a52a
-          # export PL_DEEPSPEED_CONFIG_PATH='{"zero_force_ds_cpu_optimizer": false}'
           export PL_DEEPSPEED_CONFIG_PATH=~/knowledge-unlearning/ds_config.json
 
           # Run the example
@@ -47,10 +48,10 @@ spec:
           mountPath: /data
         resources:
           requests:
-            cpu: "16"
+            cpu: "8"
             memory: "32Gi"
           limits:
-            cpu: "32"
+            cpu: "16"
             memory: "64Gi"
             nvidia.com/gpu: 1  # Request 1 GPU
       volumes:
