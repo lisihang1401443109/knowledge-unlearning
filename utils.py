@@ -2,27 +2,82 @@ from typing import List, Dict
 from pytorch_lightning import Callback
 import pandas as pd
 
+import os
+import matplotlib.pyplot as plt
+
 class MetricTracker(Callback):
 
     def __init__(self, run_name):
-        self.df = None
+        self.metrics = []
         self.run_name = run_name
+        self._epoch_metrics = {}
 
-    def on_validation_end(self, trainer, module):
-        print(trainer.logged_metrics)
-        elogs = trainer.logged_metrics # access it here
-        elogs = {k: [v.item()] for k, v in elogs.items()}
-        new_df = pd.DataFrame(elogs)
-        # new_df = new_df[self.df.columns]
-        # self.df = pd.concat([self.df, new_df])
-        new_df.to_csv(f'csv_out/{self.run_name}.csv')
-        print('Hello World')
+    def on_validation_epoch_end(self, trainer, module):
+        elogs = trainer.logged_metrics
+        print(f"DEBUG: trainer.logged_metrics at epoch {trainer.current_epoch}: {elogs}")
+        
+        elogs = {k: v.item() for k, v in elogs.items()}
 
-    # def on_validation_epoch_end(self, trainer, module):
-    #     if isinstance(module, GPT2Valid):
-    #         elogs = trainer.logged_metrics # access it here
-    #         elogs = {k: [v.item()] for k, v in elogs.items()}
-    #         self.df = pd.DataFrame(elogs)
+        epoch = trainer.current_epoch
+        if epoch not in self._epoch_metrics:
+            self._epoch_metrics[epoch] = {'epoch': epoch}
+        
+        self._epoch_metrics[epoch].update(elogs)
+        
+        self.metrics = list(self._epoch_metrics.values())
+        self.metrics.sort(key=lambda x: x.get('epoch', 0))
+        print(f"DEBUG: self.metrics after update: {self.metrics}")
+
+        # Also save the current metrics to a csv, maintaining previous functionality but appending now
+        df = pd.DataFrame(self.metrics)
+        csv_path = f'csv_out/{self.run_name}.csv'
+        df.to_csv(csv_path, mode='w', header=True, index=False)
+        
+        # Plot metrics at the end of each validation epoch
+        self._plot_metrics()
+
+    def _plot_metrics(self):
+        if not self.metrics:
+            return
+
+        # Create plots directory if it doesn't exist
+        plots_dir = 'plots'
+        if not os.path.exists(plots_dir):
+            os.makedirs(plots_dir)
+
+        df = pd.DataFrame(self.metrics)
+        df = df.sort_values(by='epoch')
+
+        metrics_to_plot = [col for col in df.columns if col != 'epoch']
+        
+        if not metrics_to_plot:
+            return
+
+        num_plots = len(metrics_to_plot)
+        num_cols = 3
+        num_rows = (num_plots + num_cols - 1) // num_cols
+        
+        fig, axes = plt.subplots(num_rows, num_cols, figsize=(5 * num_cols, 4 * num_rows))
+        if num_plots == 1:
+            axes = [axes]
+        axes = axes.flatten()
+
+        for i, metric in enumerate(metrics_to_plot):
+            axes[i].plot(df['epoch'], df[metric], marker='o')
+            axes[i].set_title(metric)
+            axes[i].set_xlabel('Epoch')
+            axes[i].set_ylabel('Value')
+            axes[i].grid(True)
+
+        # Hide unused subplots
+        for i in range(num_plots, len(axes)):
+            fig.delaxes(axes[i])
+
+        plt.tight_layout()
+        plot_path = os.path.join(plots_dir, f'{self.run_name}.png')
+        plt.savefig(plot_path)
+        plt.close(fig)
+        print(f"Saved plot to {plot_path}")
 
 
 DIALOG_DATASETS = [

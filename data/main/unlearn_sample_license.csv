@@ -1,0 +1,66 @@
+doc_id,corpus,text
+0,license,"<?xml version=""1.0"" encoding=""ISO-8859-1""?>
+<!--
+  ~  Copyright (c) 2005-2010, WSO2 Inc. (http://wso2.com) All Rights Reserved.
+  ~
+  ~  WSO2 Inc. licenses this file to you under the Apache License,
+  ~  Version 2.0 (the ""License""); you may not use this file except
+  ~  in compliance with the License.
+  ~  You may obtain a copy of the License at
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing,
+  ~  software distributed under the License is distributed on an
+  ~  ""AS IS"" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~  KIND"
+1,license,")
+
+% @=============================================================================
+% This function is part of the Brainstorm software:
+% https://neuroimage.usc.edu/brainstorm
+% 
+% Copyright (c)2000-2020 University of Southern California & McGill University
+% This software is distributed under the terms of the GNU General Public License
+% as published by the Free Software Foundation. Further details on the GPLv3
+% license can be found at http://www.gnu.org/copyleft/gpl.html.
+% 
+% FOR RESEARCH PURPOSES ONLY. THE SOFTWARE IS PROVIDED ""AS IS,"" AND THE
+% UNIVERSITY OF SOUTHERN CALIFORNIA AND ITS COLLABORATORS DO NOT MAKE ANY
+% WARRANTY, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF
+% MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, NOR DO THEY"
+2,license," Protocol header file.
+*
+* Copyright (c) 2003 by Marc Boucher, Services Informatiques (MBSI) inc.
+* portions Copyright (c) 1997 Global Election Systems Inc.
+*
+* The authors hereby grant permission to use, copy, modify, distribute,
+* and license this software and its documentation for any purpose, provided
+* that existing copyright notices are retained in all copies and that this
+* notice and the following disclaimer are included verbatim in any 
+* distributions. No written agreement, license, or royalty fee is required
+* for any of the authorized uses.
+*
+* THIS SOFTWARE IS PROVIDED BY THE CONTRIBUTORS *AS IS* AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+* OF MERCHANTABILITY AND FITNESS FOR A PART"
+3,license,"/*
+* //******************************************************************
+* //
+* // Copyright 2015 Intel Corporation.
+* //
+* //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+* //
+* // Licensed under the Apache License, Version 2.0 (the ""License"");
+* // you may not use this file except in compliance with the License.
+* // You may obtain a copy of the License at
+* //
+* //      http://www.apache.org/licenses/LICENSE-2.0
+* //
+* // Unless required by applicable law or agreed to in writing, software
+* // distributed under the License is distributed on an ""AS IS"" BASIS,
+* // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* // See the License for the specific language governing permissions and
+* // limitations under the License.
+* //
+* //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"

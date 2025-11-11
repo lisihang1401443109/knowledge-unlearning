@@ -44,13 +44,11 @@ class Custom_Dataset(Dataset):
                         self.dataset_name,
                         valid_subset_path,
                         split=type_path,
-                        ignore_verifications=True,
                         cache_dir=args.cache_dir)
                 else:
                     dataset = load_dataset(
                         self.dataset_name,
                         split=type_path,
-                        ignore_verifications=True,
                         cache_dir=args.cache_dir)
                 self.dataset = dataset.to_pandas()
 
@@ -177,8 +175,18 @@ class Custom_Dataset(Dataset):
                 task_type = 'ppl'
             else:
                 input_, target_ = example_batch['text'], example_batch['text']
-                task = 'target'
-                task_type = 'target'
+                
+                if self.type_path == 'target':
+                    task_type = 'target'
+                elif self.type_path in ['validation', 'test', 'train']:
+                    task_type = 'ppl'  # 默认为 perplexity 评估
+                else:
+                    task_type = 'ppl'
+                
+                if '.csv' in self.dataset_name:
+                    task = self.dataset_name.split('/')[-1].replace('.csv', '').replace('unlearn_sample_', '')
+                else:
+                    task = self.dataset_name
 
         if not task:
             if self.valid_subset_path:
@@ -226,4 +234,5 @@ class Custom_Dataset(Dataset):
                 "task": task,
                 "task_type": task_type,
                 "choices": choices,
-                "answer_index": answer_index}
+                "answer_index": answer_index,
+                "dataset_name": self.dataset_name}
