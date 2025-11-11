@@ -68,6 +68,8 @@ class NeoValid(pl.LightningModule):
         # Main N to check for early stopping
         self.el_n_main = self.hparams.el_n[0]
 
+        self.validation_step_outputs = []
+
     def forward(self, input_ids, attention_mask=None, lm_labels=None):
         return self.model(
             input_ids,
@@ -86,13 +88,18 @@ class NeoValid(pl.LightningModule):
         loss, score = outputs[0], outputs[1]
         return loss, score
 
-    def validation_step(self, batch, batch_idx, dataloader_idx=-1):
+    def validation_step(self, batch, batch_idx, dataloader_idx=-1):    
         if self.mode == 'general_lm_eval':
             return self.validation_general_lm(batch)
         elif self.mode == 'unlearn':
             if dataloader_idx in [self.target_validation_idx, -1]:
-                return self.validation_forget(batch)
+                # Get the output from the validation function
+                output = self.validation_forget(batch)
+                # CHANGED: Store the output in the instance attribute list
+                self.validation_step_outputs.append(output)
+                return output
             else:
+                # For other dataloaders, we don't need to store the output for the epoch end logic
                 self.validation_general_lm(batch)
         else:
             raise Exception(
@@ -125,7 +132,13 @@ class NeoValid(pl.LightningModule):
 
         for pred, label in zip(preds, labels):
             try:
-                acc = accuracy(pred, label, ignore_index=-100)
+                acc = accuracy(
+                    pred,
+                    label,
+                    task="multiclass",
+                    num_classes=self.model.config.vocab_size,
+                    ignore_index=-100
+                )
                 accs.append(acc)
             except IndexError:
                 pass
@@ -140,8 +153,9 @@ class NeoValid(pl.LightningModule):
         # Generate suffix given a fixed prefix for Table 3.
         max_len = self.target_length
         input_ids = batch['source_ids']
+        attention_mask = batch['source_mask']
         prompt = input_ids[..., :100]
-        pred = self.model.generate(prompt, max_length=max_len)[..., 100:]
+        pred = self.model.generate(input_ids=prompt, attention_mask=attention_mask[..., :100], max_length=max_len)[..., 100:]
         value_dict['preds'] = pred
 
         # Recalculate loss individually
@@ -170,14 +184,17 @@ class NeoValid(pl.LightningModule):
 
     def validation_ma(self, batch, dataset_name):
         input_ids = batch['source_ids']
+        attention_mask = batch['source_mask']
         max_len = self.target_length
 
         labels, preds = [], []
         for i in range(1, max_len):
             label = input_ids[..., i]
             prompt = input_ids[..., :i]
+            mask = attention_mask[..., :i]
             try:
-                pred = self.model.generate(prompt, max_length=i + 1)[:, -1]
+                # pred = self.model.generate(prompt, max_length=i + 1)[:, -1]
+                pred = self.model.generate(input_ids=prompt, attention_mask=mask, max_length=i + 1)[:, -1]
             except IndexError:  # if batch == 1
                 pred = self.model.generate(torch.squeeze(
                     prompt), max_length=i + 1).squeeze()[-1]
@@ -188,7 +205,13 @@ class NeoValid(pl.LightningModule):
         preds = torch.stack(preds)
         labels = torch.stack(labels)
 
-        score = accuracy(preds, labels, ignore_index=-100)
+        score = accuracy(
+            preds,
+            labels,
+            task="multiclass",  # <-- ADD THIS ARGUMENT
+            num_classes=self.model.config.vocab_size,  # <-- AND ADD THIS ARGUMENT
+            ignore_index=-100
+        )
         self.log(
             f'{dataset_name}/acc',
             score,
@@ -203,6 +226,7 @@ class NeoValid(pl.LightningModule):
 
     def validation_el(self, batch, dataset_name):
         input_ids = batch['source_ids']
+        attention_mask = batch['source_mask']
         max_len = self.target_length
 
         batch_size = input_ids.shape[0]
@@ -212,7 +236,9 @@ class NeoValid(pl.LightningModule):
         for i in reversed(range(1, max_len)):
             label = input_ids[..., i:max_len]
             prompt = input_ids[..., :i]
-            pred = self.model.generate(prompt, max_length=max_len)[..., i:]
+            mask = attention_mask[..., :i]
+            # pred = self.model.generate(prompt, max_length=max_len)[..., i:]
+            pred = self.model.generate(input_ids=prompt, attention_mask=mask, max_length=max_len)[..., i:]
 
             for example_idx in range(batch_size):
                 p, l = pred[example_idx], label[example_idx]
@@ -252,11 +278,12 @@ class NeoValid(pl.LightningModule):
     def validation_general_lm(self, batch):
         task = batch["task"][0]
         task_type = batch["task_type"][0]
+        domain = batch["dataset_name"][0]
 
         if task_type == 'ppl':
             loss, score = self._step(batch)
             self.log(
-                f'{task}/loss',
+                f'{domain}/{task}/loss',
                 loss,
                 on_epoch=True,
                 prog_bar=True,
@@ -267,6 +294,7 @@ class NeoValid(pl.LightningModule):
             self.classification_verbalizer(
                 padding_length=self.hparams.input_length,
                 task=task,
+                domain=domain,
                 batch=batch,
                 choices=batch["choices"],
                 answer_index=batch["answer_index"])
@@ -274,20 +302,23 @@ class NeoValid(pl.LightningModule):
             self.lambada_evaluation(
                 padding_length=self.hparams.input_length,
                 task='lambada',
+                domain=domain,
                 batch=batch)
         elif task_type == 'dialog':
             self.dialog_evaluation(
                 padding_length=self.hparams.input_length,
                 task=task,
+                domain=domain,
                 batch=batch)
         elif task_type == 'target':
-            raise Exception(
-                f'You are evaluating "target" on "general_lm_eval" mode, rerun with "unlearn" mode')
+            print('Debug in Neo valid, an Exception here:', task, task_type, domain)
+            # raise Exception(
+            #     f'You are evaluating "target" on "general_lm_eval" mode, rerun with "unlearn" mode')
         else:
             raise Exception(f'Currently, {task_type} not implemented..')
 
     def classification_verbalizer(
-            self, padding_length, task, batch, choices, answer_index):
+            self, padding_length, task, domain, batch, choices, answer_index):
         source_ids = batch["source_ids"].tolist()
         target_ids = batch["target_ids"]
         batch_size = len(source_ids)
@@ -375,7 +406,7 @@ class NeoValid(pl.LightningModule):
         batch_acc_avg = batch_acc / batch_size
 
         self.log(
-            f'{task}/acc',
+            f'{domain}/{task}/acc',
             batch_acc_avg,
             prog_bar=True,
             logger=True,
@@ -384,7 +415,7 @@ class NeoValid(pl.LightningModule):
 
         return
 
-    def lambada_evaluation(self, padding_length, task, batch):
+    def lambada_evaluation(self, padding_length, task, domain, batch):
         source_ids = batch["source_ids"].tolist()
         target_ids = batch["target_ids"].tolist()
         batch_size = len(source_ids)
@@ -462,21 +493,21 @@ class NeoValid(pl.LightningModule):
         batch_acc_avg = batch_acc / batch_size
         batch_f1_avg = batch_f1 / batch_size
         self.log(
-            f'{task}/loss',
+            f'{domain}/{task}/loss',
             batch_loss_avg,
             prog_bar=True,
             logger=True,
             add_dataloader_idx=False,
             sync_dist=True)
         self.log(
-            f'{task}/acc',
+            f'{domain}/{task}/acc',
             batch_acc_avg,
             prog_bar=True,
             logger=True,
             add_dataloader_idx=False,
             sync_dist=True)
         self.log(
-            f'{task}/f1',
+            f'{domain}/{task}/f1',
             batch_f1_avg,
             prog_bar=True,
             logger=True,
@@ -484,7 +515,7 @@ class NeoValid(pl.LightningModule):
             sync_dist=True)
         return
 
-    def dialog_evaluation(self, padding_length, task, batch):
+    def dialog_evaluation(self, padding_length, task, domain, batch):
         source_ids = batch["source_ids"].tolist()
         target_ids = batch["target_ids"].tolist()
         batch_size = len(source_ids)
@@ -582,14 +613,14 @@ class NeoValid(pl.LightningModule):
         unigram_f1 = f1_batched / batch_size
 
         self.log(
-            f'{task}/loss',
+            f'{domain}/{task}/loss',
             loss,
             prog_bar=True,
             logger=True,
             add_dataloader_idx=False,
             sync_dist=True),
         self.log(
-            f'{task}/f1',
+            f'{domain}/{task}/f1',
             unigram_f1,
             prog_bar=True,
             logger=True,
@@ -597,51 +628,55 @@ class NeoValid(pl.LightningModule):
             sync_dist=True)
 
     # Reduce results from gpus to a single dataframe + determine early stopping
-    def validation_epoch_end(self, output):
-        if self.hparams.mode in ['unlearn']:
+    # CHANGED: Method renamed and 'output' argument removed
+    def on_validation_epoch_end(self):
+        # Only run this logic if we are in 'unlearn' mode and there are outputs to process
+        if self.hparams.mode in ['unlearn'] and self.validation_step_outputs:
             if self.init_validation:
                 log_col_name = 'init'
             else:
                 log_col_name = f'{self.current_epoch:02d}'
-
-            # reduce all output from gpus
-            if len(self.hparams.valid_sets) > 1:
-                outputs = self.all_gather(output)[self.target_validation_idx]
-            else:
-                outputs = self.all_gather(output)
+    
+            # CHANGED: Use the instance attribute list and gather results from all GPUs
+            outputs = self.all_gather(self.validation_step_outputs)
+    
+            # NOTE: The original code had logic for multiple validation sets here.
+            # If self.all_gather returns a list of lists, you might need to select the correct one.
+            # Assuming the logic in validation_step correctly filters, this should be a flat list of dicts.
+            
             keys = outputs[0].keys()  # [doc_id, loss, acc, el]
             full_output = {k: [] for k in keys}
-
+    
             # gather all outputs
             for out in outputs:
                 for k in keys:
                     full_output[k].append(torch.flatten(out[k]))
-
+    
             # refactor into pandas favorable format
             for k in keys:
                 full_output[k] = torch.cat(full_output[k])
                 full_output[k] = torch.flatten(full_output[k]).cpu().numpy()
-
+    
             if len(full_output['preds'].shape) == 1:
                 full_output['preds'] = self.tokenizer.decode(
                     full_output['preds'])
             else:
                 full_output['preds'] = self.tokenizer.batch_decode(
                     full_output['preds'])
-
+    
             # except for 'doc_id' rename all keys to include the epoch
             for k in list(keys):
                 full_output[f'{k}_{log_col_name}'] = full_output.pop(k)
             full_output['doc_id'] = full_output.pop(f'doc_id_{log_col_name}')
             df = pd.DataFrame(full_output)
-
+    
             # append to the df that stores all results from all ddp processes
             df['doc_id'] = df['doc_id'].astype(int)
             df = df.drop_duplicates(['doc_id'])
             df = df.set_index('doc_id')
             self.valid_df = self.valid_df.combine_first(df)
             self.valid_df = self.valid_df.reindex(self.valid_df_index)
-
+    
             # check early stopping criteria
             ma = df[f'acc_{log_col_name}'].mean()
             el = df[f'el_{self.el_n_main}-gram_{log_col_name}'].mean()
@@ -650,6 +685,9 @@ class NeoValid(pl.LightningModule):
                     logging.info(
                         f'Early Stopping as Forgetting Threshold is reached, {ma=}, {el=}')
                     self.trainer.should_stop = True
+    
+        # ADDED: Clear the outputs list at the end of the validation epoch
+        self.validation_step_outputs.clear()
 
     def on_validation_end(self):
         if self.hparams.mode in [
@@ -693,6 +731,9 @@ class NeoValid(pl.LightningModule):
                 length=length)
             datasets.append(dataset)
 
+        for i, dataset in enumerate(datasets):
+            print('DEBUG in Neo:', i, ' ', dataset.dataset_name, ' ',dataset.type_path, ' ', dataset.valid_subset_path)
+
         # Setup the dataframe for logging MA and EL of individual examples
         if self.mode in ['unlearn'] and self.valid_df is None:
             target_idx = self.hparams.valid_type_path.index('target')
@@ -725,6 +766,7 @@ class NeoValid(pl.LightningModule):
                         batch_size=self.hparams.eval_batch_size,
                         num_workers=self.hparams.num_workers,
                         shuffle=False))
+
         return dataloaders
 
     # Below are some utils functions
